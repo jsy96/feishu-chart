@@ -144,8 +144,8 @@ function formatMonth(monthStr) {
         const year = parts[0];
         let month = parts[1];
         // 补零到两位
-        month = month.padStart(2, '0');
-        const result = `${year}.${month}`;
+        let paddedMonth = month.padStart(2, '0');
+        const result = `${year}.${paddedMonth}`;
         console.log(`formatMonth: ${monthStr} -> ${result}`);
         return result;
     }
@@ -160,12 +160,33 @@ function populateMonthSelect() {
     const rawMonths = allData.map(row => row[fieldNames.month]);
     console.log('原始月份数据:', rawMonths);
 
-    // 获取所有唯一的月份，按时间顺序排列，并格式化
-    availableMonths = [...new Set(allData.map(row => {
-        const value = row[fieldNames.month];
-        return value ? formatMonth(String(value).trim()) : '';
-    }).filter(v => v))].sort();
+    // 使用数字方法解析月份：年.月 ×100 四舍五入
+    const monthSet = new Set();
 
+    allData.forEach(row => {
+        const value = row[fieldNames.month];
+        if (!value) return;
+        const rawValue = String(value).trim();
+
+        const parts = rawValue.split('.');
+        if (parts.length === 2) {
+            const numValue = parseFloat(rawValue);
+            if (!isNaN(numValue)) {
+                // ×100 四舍五入
+                const rounded = Math.round(numValue * 100);
+                // 后两位是月份，前几位是年份
+                const year = Math.floor(rounded / 100);
+                const month = rounded % 100;
+                const formatted = `${year}.${String(month).padStart(2, '0')}`;
+                monthSet.add(formatted);
+            }
+        } else {
+            // 格式不符，直接使用
+            monthSet.add(rawValue);
+        }
+    });
+
+    availableMonths = Array.from(monthSet).sort();
     console.log('格式化后的月份列表:', availableMonths);
 
     // 只显示到当前月为止
