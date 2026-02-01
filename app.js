@@ -137,17 +137,21 @@ function detectFields() {
     console.log('检测到的字段:', fieldNames);
 }
 
-// 格式化月份为 YYYY.MM 格式（月份补零）
+// 格式化月份为 YYYY.MM 格式（使用数字方法）
 function formatMonth(monthStr) {
     const parts = monthStr.split('.');
     if (parts.length === 2) {
-        const year = parts[0];
-        let month = parts[1];
-        // 补零到两位
-        let paddedMonth = month.padStart(2, '0');
-        const result = `${year}.${paddedMonth}`;
-        console.log(`formatMonth: ${monthStr} -> ${result}`);
-        return result;
+        const numValue = parseFloat(monthStr);
+        if (!isNaN(numValue)) {
+            // ×100 四舍五入
+            const rounded = Math.round(numValue * 100);
+            // 后两位是月份，前几位是年份
+            const year = Math.floor(rounded / 100);
+            const month = rounded % 100;
+            const result = `${year}.${String(month).padStart(2, '0')}`;
+            console.log(`formatMonth: ${monthStr} -> ${result}`);
+            return result;
+        }
     }
     return monthStr;
 }
