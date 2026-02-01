@@ -136,11 +136,11 @@ function detectFields() {
 function populateMonthSelect() {
     if (allData.length === 0) return;
 
-    // 获取所有唯一的月份
+    // 获取所有唯一的月份，按时间顺序排列
     const months = [...new Set(allData.map(row => {
         const value = row[fieldNames.month];
         return value ? String(value).trim() : '';
-    }).filter(v => v))].sort().reverse();
+    }).filter(v => v))].sort();  // 正序排列，如 2024.05, 2024.06, ... 2026.01
 
     elements.monthSelect.innerHTML = '<option value="">请选择月份</option>';
     months.forEach(month => {
@@ -150,9 +150,9 @@ function populateMonthSelect() {
         elements.monthSelect.appendChild(option);
     });
 
-    // 默认选择最新的月份
+    // 默认选择最新的月份（最后一个）
     if (months.length > 0) {
-        elements.monthSelect.value = months[0];
+        elements.monthSelect.value = months[months.length - 1];
         handleMonthChange();
     }
 }

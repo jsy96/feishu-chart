@@ -64,37 +64,46 @@ export default async function handler(req, res) {
             console.log(`自动使用工作表: ${tablesData.data.items[0].name} (${tableId})`);
         }
 
-        // 步骤3: 获取表格数据
-        const pageToken = req.query.page_token;
-        const pageSize = parseInt(req.query.page_size) || 100;
+        // 步骤3: 获取所有表格数据（自动处理分页）
+        let allRecords = [];
+        let pageToken = '';
+        const pageSize = 100;  // 每页最大数量
 
-        let recordsUrl = `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${tableId}/records?page_size=${pageSize}`;
-        if (pageToken) {
-            recordsUrl += `&page_token=${encodeURIComponent(pageToken)}`;
-        }
-
-        const recordsResponse = await fetch(recordsUrl, {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
+        do {
+            let recordsUrl = `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${tableId}/records?page_size=${pageSize}`;
+            if (pageToken) {
+                recordsUrl += `&page_token=${encodeURIComponent(pageToken)}`;
             }
-        });
 
-        const recordsData = await recordsResponse.json();
+            const recordsResponse = await fetch(recordsUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
 
-        if (recordsData.code !== 0) {
-            throw new Error(`获取表格数据失败: ${recordsData.msg}`);
-        }
+            const recordsData = await recordsResponse.json();
 
-        // 步骤4: 返回数据
-        const result = recordsData.data.items.map(item => item.fields);
+            if (recordsData.code !== 0) {
+                throw new Error(`获取表格数据失败: ${recordsData.msg}`);
+            }
+
+            // 累积数据
+            allRecords = allRecords.concat(recordsData.data.items);
+
+            // 检查是否还有更多数据
+            pageToken = recordsData.data.page_token || '';
+            var hasMore = recordsData.data.has_more || false;
+
+        } while (hasMore);
+
+        // 步骤4: 返回所有数据
+        const result = allRecords.map(item => item.fields);
 
         res.status(200).json({
             success: true,
             data: result,
-            total: recordsData.data.total,
-            page_token: recordsData.data.page_token,
-            has_more: recordsData.data.has_more,
-            table_id: tableId  // 返回实际使用的 table_id
+            total: result.length,
+            table_id: tableId
         });
 
     } catch (error) {
