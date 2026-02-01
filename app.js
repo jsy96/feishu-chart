@@ -275,13 +275,11 @@ function updateSummary(income, expense, balance) {
     elements.totalExpense.textContent = formatCurrency(expense);
     elements.netBalance.textContent = formatCurrency(balance);
 
-    // 净收支颜色
-    if (balance > 0) {
-        elements.netBalance.style.color = 'var(--income-color)';
-    } else if (balance < 0) {
-        elements.netBalance.style.color = 'var(--expense-color)';
+    // 净收支颜色：支出大于收入用红色，否则用绿色
+    if (expense > income) {
+        elements.netBalance.style.color = 'var(--expense-color)';  // 红色
     } else {
-        elements.netBalance.style.color = 'var(--text-primary)';
+        elements.netBalance.style.color = 'var(--income-color)';  // 绿色
     }
 }
 
