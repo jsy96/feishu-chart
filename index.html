@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞书多维表格数据图表</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 数据图表展示</h1>
+            <button id="settingsBtn" class="icon-btn">⚙️</button>
+        </header>
+
+        <!-- 数据来源选择 -->
+        <div id="dataSourcePanel" class="panel">
+            <h2>选择数据来源</h2>
+            <div class="data-source-options">
+                <button class="option-btn" data-source="csv">
+                    <span class="icon">📁</span>
+                    <span>上传 CSV 文件</span>
+                </button>
+                <button class="option-btn" data-source="json">
+                    <span class="icon">📋</span>
+                    <span>粘贴 JSON 数据</span>
+                </button>
+                <button class="option-btn" data-source="feishu">
+                    <span class="icon">🚀</span>
+                    <span>飞书多维表格</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- CSV 上传面板 -->
+        <div id="csvPanel" class="panel hidden">
+            <h2>上传 CSV 文件</h2>
+            <div class="upload-area">
+                <input type="file" id="csvFileInput" accept=".csv" />
+                <p>或直接拖拽 CSV 文件到这里</p>
+            </div>
+            <button id="backBtn" class="secondary-btn">返回</button>
+        </div>
+
+        <!-- JSON 输入面板 -->
+        <div id="jsonPanel" class="panel hidden">
+            <h2>粘贴 JSON 数据</h2>
+            <p class="hint">格式：[{"字段名1": "值1", "字段名2": "值2"}, ...]</p>
+            <textarea id="jsonInput" placeholder='[{"日期": "2024-01-01", "销售额": 1000}, ...]'></textarea>
+            <div class="button-group">
+                <button id="loadJsonBtn" class="primary-btn">加载数据</button>
+                <button id="backFromJsonBtn" class="secondary-btn">返回</button>
+            </div>
+        </div>
+
+        <!-- 飞书配置面板 -->
+        <div id="feishuPanel" class="panel hidden">
+            <h2>飞书多维表格配置</h2>
+            <div class="form-group">
+                <label>App ID</label>
+                <input type="text" id="appId" placeholder="cli_xxxxxxxxx" />
+            </div>
+            <div class="form-group">
+                <label>App Secret</label>
+                <input type="password" id="appSecret" placeholder="xxxxxxxxxxxx" />
+            </div>
+            <div class="form-group">
+                <label>App Token (表格链接中的 bitable/{app_token})</label>
+                <input type="text" id="appToken" placeholder="app_xxxxxxxxx" />
+            </div>
+            <div class="form-group">
+                <label>Table ID</label>
+                <input type="text" id="tableId" placeholder="tbl_xxxxxxxxx" />
+            </div>
+            <p class="warning">⚠️ 注意：App Secret 敏感信息会保存在浏览器本地存储中</p>
+            <div class="button-group">
+                <button id="loadFeishuBtn" class="primary-btn">加载数据</button>
+                <button id="backFromFeishuBtn" class="secondary-btn">返回</button>
+            </div>
+        </div>
+
+        <!-- 图表展示区域 -->
+        <div id="chartPanel" class="panel hidden">
+            <div class="chart-controls">
+                <select id="chartType">
+                    <option value="bar">柱状图</option>
+                    <option value="line">折线图</option>
+                    <option value="pie">饼图</option>
+                </select>
+                <select id="xAxisField">
+                    <option value="">选择 X 轴字段</option>
+                </select>
+                <select id="yAxisField">
+                    <option value="">选择 Y 轴字段</option>
+                </select>
+                <button id="refreshBtn" class="primary-btn">刷新图表</button>
+                <button id="changeDataBtn" class="secondary-btn">更换数据</button>
+            </div>
+            <div id="chart" class="chart-container"></div>
+            <div id="dataTable" class="data-table-container hidden">
+                <h3>原始数据</h3>
+                <table id="dataTableContent"></table>
+            </div>
+        </div>
+
+        <!-- 加载动画 -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+            <p>加载数据中...</p>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
