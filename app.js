@@ -2,6 +2,9 @@
 let allData = [];
 let currentMonth = '';  // 当前显示的月份
 let availableMonths = [];  // 可用的月份列表
+let currentYear = '';  // 当前显示的年份
+let availableYears = [];  // 可用的年份列表
+let viewMode = 'month';  // 当前视图模式: 'month' | 'year' | 'months12'
 
 // 字段名配置（自动识别）
 let fieldNames = {
@@ -31,7 +34,19 @@ const elements = {
     detailsSection: document.getElementById('detailsSection'),
     incomeList: document.getElementById('incomeList'),
     expenseList: document.getElementById('expenseList'),
-    noDataTip: document.getElementById('noDataTip')
+    noDataTip: document.getElementById('noDataTip'),
+    // Tab 切换相关
+    tabBtns: document.querySelectorAll('.tab-btn'),
+    monthView: document.getElementById('monthView'),
+    yearView: document.getElementById('yearView'),
+    months12View: document.getElementById('months12View'),
+    // 按年统计相关
+    yearSelect: document.getElementById('yearSelect'),
+    yearTotalIncome: document.getElementById('yearTotalIncome'),
+    yearTotalExpense: document.getElementById('yearTotalExpense'),
+    yearNetBalance: document.getElementById('yearNetBalance'),
+    // 最近12个月相关
+    months12TableBody: document.getElementById('months12TableBody')
 };
 
 // 初始化
@@ -47,6 +62,14 @@ function bindEvents() {
     elements.monthSelect.addEventListener('change', handleMonthSelectChange);
     elements.prevMonthBtn.addEventListener('click', goToPrevMonth);
     elements.nextMonthBtn.addEventListener('click', goToNextMonth);
+
+    // Tab 切换事件
+    elements.tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => switchView(btn.dataset.view));
+    });
+
+    // 年份选择事件
+    elements.yearSelect.addEventListener('change', handleYearChange);
 }
 
 // 显示/隐藏面板
@@ -313,7 +336,14 @@ function handleMonthChange() {
 
     // 更新显示
     updateSummary(totalIncome, totalExpense, netBalance);
-    updateDetails(incomeItems, expenseItems);
+
+    // 只在按月统计模式下显示明细
+    if (viewMode === 'month') {
+        updateDetails(incomeItems, expenseItems);
+    } else {
+        elements.detailsSection.classList.add('hidden');
+        elements.noDataTip.classList.add('hidden');
+    }
 }
 
 // 更新汇总显示
@@ -398,6 +428,185 @@ function clearDisplay() {
 // 格式化金额
 function formatCurrency(amount) {
     return '¥' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// ============ Tab 切换相关函数 ============
+
+// 切换视图
+function switchView(view) {
+    viewMode = view;
+
+    // 更新 Tab 按钮状态
+    elements.tabBtns.forEach(btn => {
+        if (btn.dataset.view === view) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // 显示/隐藏对应的视图面板
+    elements.monthView.classList.toggle('hidden', view !== 'month');
+    elements.yearView.classList.toggle('hidden', view !== 'year');
+    elements.months12View.classList.toggle('hidden', view !== 'months12');
+
+    // 根据视图模式执行相应的操作
+    if (view === 'year') {
+        populateYearSelect();
+    } else if (view === 'months12') {
+        displayRecent12Months();
+    }
+}
+
+// ============ 按年统计相关函数 ============
+
+// 填充年份下拉框
+function populateYearSelect() {
+    if (allData.length === 0) return;
+
+    // 从月份数据中提取年份
+    const yearSet = new Set();
+    availableMonths.forEach(month => {
+        const parts = month.split('.');
+        if (parts.length === 2) {
+            yearSet.add(parts[0]);
+        }
+    });
+
+    availableYears = Array.from(yearSet).sort();
+
+    elements.yearSelect.innerHTML = '<option value="">请选择年份</option>';
+    availableYears.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        elements.yearSelect.appendChild(option);
+    });
+
+    // 默认选择最新年份
+    if (availableYears.length > 0) {
+        const latestYear = availableYears[availableYears.length - 1];
+        elements.yearSelect.value = latestYear;
+        displayYear(latestYear);
+    }
+}
+
+// 处理年份变化
+function handleYearChange() {
+    const selectedYear = elements.yearSelect.value;
+    if (selectedYear) {
+        displayYear(selectedYear);
+    }
+}
+
+// 显示指定年份的数据
+function displayYear(year) {
+    currentYear = year;
+
+    // 过滤该年份的数据
+    const yearData = allData.filter(row => {
+        const value = row[fieldNames.month];
+        return value && String(value).startsWith(year);
+    });
+
+    // 分类收入和支出
+    const incomeItems = [];
+    const expenseItems = [];
+
+    yearData.forEach(row => {
+        const amount = parseFloat(row[fieldNames.amount]) || 0;
+        const type = String(row[fieldNames.type] || '').trim();
+
+        const isIncome = type.includes('收入');
+        const isExpense = type.includes('支出');
+
+        if (isIncome) {
+            incomeItems.push({ amount });
+        } else if (isExpense) {
+            expenseItems.push({ amount });
+        }
+    });
+
+    // 计算汇总
+    const totalIncome = incomeItems.reduce((sum, item) => sum + item.amount, 0);
+    const totalExpense = expenseItems.reduce((sum, item) => sum + item.amount, 0);
+    const netBalance = totalIncome - totalExpense;
+
+    // 更新显示
+    elements.yearTotalIncome.textContent = formatCurrency(totalIncome);
+    elements.yearTotalExpense.textContent = formatCurrency(totalExpense);
+    elements.yearNetBalance.textContent = formatCurrency(netBalance);
+
+    // 净收支颜色：支出大于收入用红色，否则用绿色
+    if (totalExpense > totalIncome) {
+        elements.yearNetBalance.style.color = 'var(--expense-color)';
+    } else {
+        elements.yearNetBalance.style.color = 'var(--income-color)';
+    }
+}
+
+// ============ 最近12个月统计相关函数 ============
+
+// 显示最近12个月统计
+function displayRecent12Months() {
+    if (availableMonths.length === 0) return;
+
+    // 获取最近12个月（最多）
+    const recentMonths = availableMonths.slice(-12);
+    elements.months12TableBody.innerHTML = '';
+
+    recentMonths.forEach(month => {
+        // 过滤该月份的数据
+        const monthData = allData.filter(row => {
+            const value = row[fieldNames.month];
+            return value && formatMonth(String(value).trim()) === month;
+        });
+
+        // 分类收入和支出
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        monthData.forEach(row => {
+            const amount = parseFloat(row[fieldNames.amount]) || 0;
+            const type = String(row[fieldNames.type] || '').trim();
+
+            if (type.includes('收入')) {
+                totalIncome += amount;
+            } else if (type.includes('支出')) {
+                totalExpense += amount;
+            }
+        });
+
+        const netBalance = totalIncome - totalExpense;
+
+        // 创建表格行
+        const tr = document.createElement('tr');
+
+        // 月份列
+        const tdMonth = document.createElement('td');
+        tdMonth.textContent = month;
+        tr.appendChild(tdMonth);
+
+        // 收入列
+        const tdIncome = document.createElement('td');
+        tdIncome.textContent = formatCurrency(totalIncome);
+        tdIncome.className = 'income-cell';
+        tr.appendChild(tdIncome);
+
+        // 支出列
+        const tdExpense = document.createElement('td');
+        tdExpense.textContent = formatCurrency(totalExpense);
+        tdExpense.className = 'expense-cell';
+        tr.appendChild(tdExpense);
+
+        // 净收支列
+        const tdBalance = document.createElement('td');
+        tdBalance.textContent = formatCurrency(netBalance);
+        tdBalance.className = totalExpense > totalIncome ? 'balance-negative' : 'balance-positive';
+        tr.appendChild(tdBalance);
+
+        elements.months12TableBody.appendChild(tr);
+    });
 }
 
 // 启动应用
