@@ -113,8 +113,8 @@ function detectFields() {
         return value && /^\d{4}\.\d{2}$/.test(String(value));
     }) || fields.find(f => /月|month/i.test(f));
 
-    // 检测收支类型字段
-    fieldNames.type = fields.find(f => /类型|type|收支|分类/i.test(f));
+    // 检测收支类型字段（类别、类型、收支等）
+    fieldNames.type = fields.find(f => /类别|类型|type|收支|分类/i.test(f));
 
     // 检测金额字段
     fieldNames.amount = fields.find(f => {
@@ -122,8 +122,8 @@ function detectFields() {
         return !isNaN(value) && /金额|amount|价格|price|元/i.test(f);
     }) || fields.find(f => !isNaN(parseFloat(firstRow[f])) && f !== fieldNames.month);
 
-    // 检测名称字段
-    fieldNames.name = fields.find(f => /名称|name|描述|desc|备注|项目/i.test(f)) ||
+    // 检测名称字段（项目、名称等）
+    fieldNames.name = fields.find(f => /项目|名称|name|描述|desc/i.test(f)) ||
                        fields.find(f => f !== fieldNames.month && f !== fieldNames.type && f !== fieldNames.amount);
 
     // 检测日期字段（可选）
@@ -198,13 +198,13 @@ function handleMonthChange() {
         const type = String(row[fieldNames.type] || '').trim();
 
         // 判断是收入还是支出
-        const isIncome = amount > 0 && (type.includes('收入') || type === '收' || type === '+');
-        const isExpense = amount > 0 && (type.includes('支出') || type === '支' || type === '-');
+        const isIncome = type.includes('收入');
+        const isExpense = type.includes('支出');
 
         const item = {
-            name: row[fieldNames.name] || '-',
+            name: row[fieldNames.name] || row['备注'] || '-',
             amount: amount,
-            date: fieldNames.date ? (row[fieldNames.date] || '') : ''
+            remark: row['备注'] || ''
         };
 
         if (isIncome) {
@@ -279,12 +279,12 @@ function createItemCard(item, type) {
     name.className = 'item-name';
     name.textContent = item.name;
 
-    const date = document.createElement('div');
-    date.className = 'item-date';
-    date.textContent = item.date || ' ';
+    const remark = document.createElement('div');
+    remark.className = 'item-date';
+    remark.textContent = item.remark || ' ';
 
     info.appendChild(name);
-    info.appendChild(date);
+    info.appendChild(remark);
 
     const amount = document.createElement('div');
     amount.className = 'item-amount';
