@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飞书多维表格数据图表</title>
+    <title>收支明细统计</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>📊 数据图表展示</h1>
-            <button id="settingsBtn" class="icon-btn">⚙️</button>
+            <h1>💰 收支明细统计</h1>
+            <button id="refreshBtn" class="icon-btn" title="刷新数据">🔄</button>
         </header>
 
         <!-- 数据来源选择 -->
@@ -22,10 +21,6 @@
                 <button class="option-btn" data-source="csv">
                     <span class="icon">📁</span>
                     <span>上传 CSV 文件</span>
-                </button>
-                <button class="option-btn" data-source="json">
-                    <span class="icon">📋</span>
-                    <span>粘贴 JSON 数据</span>
                 </button>
                 <button class="option-btn" data-source="feishu">
                     <span class="icon">🚀</span>
@@ -44,61 +39,66 @@
             <button id="backBtn" class="secondary-btn">返回</button>
         </div>
 
-        <!-- JSON 输入面板 -->
-        <div id="jsonPanel" class="panel hidden">
-            <h2>粘贴 JSON 数据</h2>
-            <p class="hint">格式：[{"字段名1": "值1", "字段名2": "值2"}, ...]</p>
-            <textarea id="jsonInput" placeholder='[{"日期": "2024-01-01", "销售额": 1000}, ...]'></textarea>
-            <div class="button-group">
-                <button id="loadJsonBtn" class="primary-btn">加载数据</button>
-                <button id="backFromJsonBtn" class="secondary-btn">返回</button>
-            </div>
-        </div>
-
-        <!-- 飞书配置面板 -->
-        <div id="feishuPanel" class="panel hidden">
-            <h2>飞书多维表格</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                数据将从服务器获取，密钥安全保存在后端环境变量中。
-            </p>
-            <div class="button-group">
-                <button id="loadFeishuBtn" class="primary-btn">从飞书加载数据</button>
-                <button id="backFromFeishuBtn" class="secondary-btn">返回</button>
-            </div>
-        </div>
-
-        <!-- 图表展示区域 -->
-        <div id="chartPanel" class="panel hidden">
-            <div class="chart-controls">
-                <select id="chartType">
-                    <option value="bar">柱状图</option>
-                    <option value="line">折线图</option>
-                    <option value="pie">饼图</option>
-                </select>
-                <select id="xAxisField">
-                    <option value="">选择 X 轴字段</option>
-                </select>
-                <select id="yAxisField">
-                    <option value="">选择 Y 轴字段</option>
-                </select>
-                <button id="refreshBtn" class="primary-btn">刷新图表</button>
-                <button id="changeDataBtn" class="secondary-btn">更换数据</button>
-            </div>
-            <div id="chart" class="chart-container"></div>
-            <div id="dataTable" class="data-table-container hidden">
-                <h3>原始数据</h3>
-                <table id="dataTableContent"></table>
-            </div>
-        </div>
-
         <!-- 加载动画 -->
         <div id="loadingOverlay" class="loading-overlay hidden">
             <div class="spinner"></div>
-            <p>加载数据中...</p>
+            <p id="loadingText">加载数据中...</p>
+        </div>
+
+        <!-- 主界面：月份选择和统计 -->
+        <div id="mainPanel" class="panel hidden">
+            <!-- 月份选择 -->
+            <div class="month-selector">
+                <label for="monthSelect">选择月份：</label>
+                <select id="monthSelect">
+                    <option value="">请选择月份</option>
+                </select>
+                <button id="todayBtn" class="today-btn">当前月</button>
+            </div>
+
+            <!-- 收支汇总 -->
+            <div class="summary-section">
+                <div class="summary-card income">
+                    <div class="summary-icon">📈</div>
+                    <div class="summary-content">
+                        <div class="summary-label">本月收入</div>
+                        <div class="summary-value" id="totalIncome">¥0.00</div>
+                    </div>
+                </div>
+                <div class="summary-card expense">
+                    <div class="summary-icon">📉</div>
+                    <div class="summary-content">
+                        <div class="summary-label">本月支出</div>
+                        <div class="summary-value" id="totalExpense">¥0.00</div>
+                    </div>
+                </div>
+                <div class="summary-card balance">
+                    <div class="summary-icon">💵</div>
+                    <div class="summary-content">
+                        <div class="summary-label">净收支</div>
+                        <div class="summary-value" id="netBalance">¥0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 明细列表 -->
+            <div id="detailsSection" class="details-section hidden">
+                <h3 class="section-title income-title">📈 收入明细</h3>
+                <div id="incomeList" class="item-list"></div>
+
+                <h3 class="section-title expense-title">📉 支出明细</h3>
+                <div id="expenseList" class="item-list"></div>
+            </div>
+
+            <!-- 无数据提示 -->
+            <div id="noDataTip" class="no-data-tip hidden">
+                <p>该月份暂无数据</p>
+            </div>
+
+            <button id="changeDataBtn" class="secondary-btn full-width">更换数据源</button>
         </div>
     </div>
 
-    <script src="config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
