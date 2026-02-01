@@ -54,12 +54,12 @@ git push origin main
 2. 点击 **Import Project** → 选择你的 GitHub 仓库
 3. 配置环境变量：
 
-| 名称 | 值 |
-|------|-----|
-| `FEISHU_APP_ID` | cli_xxxxxxxxxxxxx |
-| `FEISHU_APP_SECRET` | xxxxxxxxxxxxxxxx |
-| `FEISHU_APP_TOKEN` | app_xxxxxxxxxxxxx |
-| `FEISHU_TABLE_ID` | tbl_xxxxxxxxxxxxx |
+| 名称 | 值 | 说明 |
+|------|-----|------|
+| `FEISHU_APP_ID` | cli_xxxxxxxxxxxxx | 飞书应用 ID |
+| `FEISHU_APP_SECRET` | xxxxxxxxxxxxxxxx | 飞书应用密钥 |
+| `FEISHU_APP_TOKEN` | Ljosb00tka7baAsaZOBcL4BFnmc | 从链接中提取（见下方说明） |
+| `FEISHU_TABLE_ID` | tbl_xxxxxxxxxxxxx | 可选，不填则自动使用第一个表格 |
 
 4. 点击 **Deploy**
 

@@ -12,10 +12,10 @@ export default async function handler(req, res) {
         const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
 
         // 验证配置
-        if (!FEISHU_APP_ID || !FEISHU_APP_SECRET || !FEISHU_APP_TOKEN || !FEISHU_TABLE_ID) {
+        if (!FEISHU_APP_ID || !FEISHU_APP_SECRET || !FEISHU_APP_TOKEN) {
             return res.status(500).json({
                 error: 'Server configuration error',
-                message: '飞书 API 配置不完整'
+                message: '飞书 API 配置不完整，请检查 FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN'
             });
         }
 
@@ -37,11 +37,38 @@ export default async function handler(req, res) {
 
         const accessToken = tokenData.tenant_access_token;
 
-        // 步骤2: 获取表格数据
+        // 步骤2: 获取 table_id（如果没有配置）
+        let tableId = FEISHU_TABLE_ID;
+
+        if (!tableId) {
+            // 获取多维表格下的所有工作表
+            const tablesUrl = `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables`;
+            const tablesResponse = await fetch(tablesUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+
+            const tablesData = await tablesResponse.json();
+
+            if (tablesData.code !== 0) {
+                throw new Error(`获取工作表列表失败: ${tablesData.msg}`);
+            }
+
+            if (!tablesData.data.items || tablesData.data.items.length === 0) {
+                throw new Error('该多维表格中没有工作表');
+            }
+
+            // 使用第一个工作表
+            tableId = tablesData.data.items[0].table_id;
+            console.log(`自动使用工作表: ${tablesData.data.items[0].name} (${tableId})`);
+        }
+
+        // 步骤3: 获取表格数据
         const pageToken = req.query.page_token;
         const pageSize = parseInt(req.query.page_size) || 100;
 
-        let recordsUrl = `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records?page_size=${pageSize}`;
+        let recordsUrl = `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${tableId}/records?page_size=${pageSize}`;
         if (pageToken) {
             recordsUrl += `&page_token=${encodeURIComponent(pageToken)}`;
         }
@@ -58,7 +85,7 @@ export default async function handler(req, res) {
             throw new Error(`获取表格数据失败: ${recordsData.msg}`);
         }
 
-        // 步骤3: 返回数据
+        // 步骤4: 返回数据
         const result = recordsData.data.items.map(item => item.fields);
 
         res.status(200).json({
@@ -66,7 +93,8 @@ export default async function handler(req, res) {
             data: result,
             total: recordsData.data.total,
             page_token: recordsData.data.page_token,
-            has_more: recordsData.data.has_more
+            has_more: recordsData.data.has_more,
+            table_id: tableId  // 返回实际使用的 table_id
         });
 
     } catch (error) {
