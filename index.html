@@ -31,11 +31,18 @@
         <div id="mainPanel" class="panel hidden">
             <!-- 月份选择 -->
             <div class="month-selector">
-                <label for="monthSelect">选择月份：</label>
+                <button id="prevMonthBtn" class="nav-btn">◀ 上一月</button>
+                <div class="current-month">
+                    <span class="month-label">当前月份</span>
+                    <span id="currentMonthDisplay" class="month-value">--.--</span>
+                </div>
+                <button id="nextMonthBtn" class="nav-btn">下一月 ▶</button>
+            </div>
+            <div class="month-selector">
+                <label for="monthSelect">或选择月份：</label>
                 <select id="monthSelect">
                     <option value="">请选择月份</option>
                 </select>
-                <button id="todayBtn" class="today-btn">当前月</button>
             </div>
 
             <!-- 收支汇总 -->

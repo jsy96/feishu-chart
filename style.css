@@ -163,13 +163,60 @@ header h1 {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     flex-wrap: wrap;
+}
+
+.current-month {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-radius: 8px;
+}
+
+.month-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.month-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.nav-btn {
+    padding: 12px 20px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.nav-btn:disabled {
+    background: var(--border-color);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .month-selector label {
     font-weight: 500;
     color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 .month-selector select {
@@ -179,24 +226,7 @@ header h1 {
     border: 1px solid var(--border-color);
     border-radius: 6px;
     font-size: 1rem;
-    max-height: 300px;
 }
-
-.today-btn {
-    padding: 10px 16px;
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-.today-btn:hover {
-    background: var(--primary-hover);
-}
-
-/* 收支汇总卡片 */
 .summary-section {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

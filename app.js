@@ -1,5 +1,7 @@
 // 全局状态
 let allData = [];
+let currentMonth = '';  // 当前显示的月份
+let availableMonths = [];  // 可用的月份列表
 
 // 字段名配置（自动识别）
 let fieldNames = {
@@ -19,7 +21,9 @@ const elements = {
     loadingText: document.getElementById('loadingText'),
     retryBtn: document.getElementById('retryBtn'),
     refreshBtn: document.getElementById('refreshBtn'),
-    todayBtn: document.getElementById('todayBtn'),
+    prevMonthBtn: document.getElementById('prevMonthBtn'),
+    nextMonthBtn: document.getElementById('nextMonthBtn'),
+    currentMonthDisplay: document.getElementById('currentMonthDisplay'),
     monthSelect: document.getElementById('monthSelect'),
     totalIncome: document.getElementById('totalIncome'),
     totalExpense: document.getElementById('totalExpense'),
@@ -40,8 +44,9 @@ function init() {
 function bindEvents() {
     elements.retryBtn.addEventListener('click', loadFeishuData);
     elements.refreshBtn.addEventListener('click', loadFeishuData);
-    elements.monthSelect.addEventListener('change', handleMonthChange);
-    elements.todayBtn.addEventListener('click', selectCurrentMonth);
+    elements.monthSelect.addEventListener('change', handleMonthSelectChange);
+    elements.prevMonthBtn.addEventListener('click', goToPrevMonth);
+    elements.nextMonthBtn.addEventListener('click', goToNextMonth);
 }
 
 // 显示/隐藏面板
@@ -137,24 +142,26 @@ function populateMonthSelect() {
     if (allData.length === 0) return;
 
     // 获取所有唯一的月份，按时间顺序排列
-    const months = [...new Set(allData.map(row => {
+    availableMonths = [...new Set(allData.map(row => {
         const value = row[fieldNames.month];
         return value ? String(value).trim() : '';
-    }).filter(v => v))].sort();  // 正序排列，如 2024.05, 2024.06, ... 2026.01
+    }).filter(v => v))].sort();
+
+    // 只显示到当前月为止
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}`;
+    availableMonths = availableMonths.filter(m => m <= currentYearMonth);
 
     elements.monthSelect.innerHTML = '<option value="">请选择月份</option>';
-    months.forEach(month => {
+    availableMonths.forEach(month => {
         const option = document.createElement('option');
         option.value = month;
         option.textContent = month;
         elements.monthSelect.appendChild(option);
     });
 
-    // 默认选择最新的月份（最后一个）
-    if (months.length > 0) {
-        elements.monthSelect.value = months[months.length - 1];
-        handleMonthChange();
-    }
+    // 默认显示当前月
+    selectCurrentMonth();
 }
 
 // 选择当前月
@@ -162,17 +169,55 @@ function selectCurrentMonth() {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
-    const currentMonth = `${year}.${month}`;
+    const currentYearMonth = `${year}.${month}`;
 
-    const hasCurrentMonth = Array.from(elements.monthSelect.options)
-        .some(opt => opt.value === currentMonth);
-
-    if (hasCurrentMonth) {
-        elements.monthSelect.value = currentMonth;
-        handleMonthChange();
-    } else {
-        alert('暂无当前月的数据');
+    // 检查当前月是否在可用月份列表中
+    if (availableMonths.includes(currentYearMonth)) {
+        displayMonth(currentYearMonth);
+    } else if (availableMonths.length > 0) {
+        // 如果当前月没有数据，显示最新的可用月份
+        displayMonth(availableMonths[availableMonths.length - 1]);
     }
+}
+
+// 下拉框选择月份
+function handleMonthSelectChange() {
+    const selectedMonth = elements.monthSelect.value;
+    if (selectedMonth) {
+        displayMonth(selectedMonth);
+    }
+}
+
+// 显示指定月份的数据
+function displayMonth(month) {
+    currentMonth = month;
+    elements.monthSelect.value = month;
+    elements.currentMonthDisplay.textContent = month;
+    updateNavigationButtons();
+    handleMonthChange();
+}
+
+// 前一月
+function goToPrevMonth() {
+    const currentIndex = availableMonths.indexOf(currentMonth);
+    if (currentIndex > 0) {
+        displayMonth(availableMonths[currentIndex - 1]);
+    }
+}
+
+// 后一月
+function goToNextMonth() {
+    const currentIndex = availableMonths.indexOf(currentMonth);
+    if (currentIndex < availableMonths.length - 1) {
+        displayMonth(availableMonths[currentIndex + 1]);
+    }
+}
+
+// 更新导航按钮状态
+function updateNavigationButtons() {
+    const currentIndex = availableMonths.indexOf(currentMonth);
+    elements.prevMonthBtn.disabled = currentIndex <= 0;
+    elements.nextMonthBtn.disabled = currentIndex >= availableMonths.length - 1;
 }
 
 // 处理月份变化
