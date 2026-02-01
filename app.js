@@ -137,15 +137,36 @@ function detectFields() {
     console.log('检测到的字段:', fieldNames);
 }
 
+// 格式化月份为 YYYY.MM 格式（月份补零）
+function formatMonth(monthStr) {
+    const parts = monthStr.split('.');
+    if (parts.length === 2) {
+        const year = parts[0];
+        let month = parts[1];
+        // 补零到两位
+        month = month.padStart(2, '0');
+        const result = `${year}.${month}`;
+        console.log(`formatMonth: ${monthStr} -> ${result}`);
+        return result;
+    }
+    return monthStr;
+}
+
 // 填充月份下拉框
 function populateMonthSelect() {
     if (allData.length === 0) return;
 
-    // 获取所有唯一的月份，按时间顺序排列
+    // 调试：打印原始数据中的月份值
+    const rawMonths = allData.map(row => row[fieldNames.month]);
+    console.log('原始月份数据:', rawMonths);
+
+    // 获取所有唯一的月份，按时间顺序排列，并格式化
     availableMonths = [...new Set(allData.map(row => {
         const value = row[fieldNames.month];
-        return value ? String(value).trim() : '';
+        return value ? formatMonth(String(value).trim()) : '';
     }).filter(v => v))].sort();
+
+    console.log('格式化后的月份列表:', availableMonths);
 
     // 只显示到当前月为止
     const now = new Date();
@@ -190,9 +211,10 @@ function handleMonthSelectChange() {
 
 // 显示指定月份的数据
 function displayMonth(month) {
-    currentMonth = month;
-    elements.monthSelect.value = month;
-    elements.currentMonthDisplay.textContent = month;
+    const formattedMonth = formatMonth(month);
+    currentMonth = formattedMonth;
+    elements.monthSelect.value = formattedMonth;
+    elements.currentMonthDisplay.textContent = formattedMonth;
     updateNavigationButtons();
     handleMonthChange();
 }
@@ -228,10 +250,10 @@ function handleMonthChange() {
         return;
     }
 
-    // 过滤该月份的数据
+    // 过滤该月份的数据（需要格式化原始数据中的月份来匹配）
     const monthData = allData.filter(row => {
         const value = row[fieldNames.month];
-        return value && String(value).trim() === selectedMonth;
+        return value && formatMonth(String(value).trim()) === selectedMonth;
     });
 
     // 分类收入和支出
