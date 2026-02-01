@@ -1,13 +1,9 @@
 // 配置文件 - 可以在这里修改默认设置
 
 const CONFIG = {
-    // 飞书 API 配置（可选在这里填写，或在界面上输入）
-    feishu: {
-        appId: '',
-        appSecret: '',
-        appToken: '',
-        tableId: ''
-    },
+    // 后端 API 地址（部署时自动使用相对路径 /api/data）
+    // 本地开发时可以设置为: 'http://localhost:3000/api/data'
+    apiUrl: '',
 
     // 默认图表设置
     chart: {
@@ -18,7 +14,6 @@ const CONFIG = {
 
     // 本地存储键名
     storageKeys: {
-        feishuConfig: 'feishu_config',
         lastData: 'last_data'
     }
 };

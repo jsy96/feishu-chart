@@ -28,10 +28,6 @@ const elements = {
     // 输入
     csvFileInput: document.getElementById('csvFileInput'),
     jsonInput: document.getElementById('jsonInput'),
-    appId: document.getElementById('appId'),
-    appSecret: document.getElementById('appSecret'),
-    appToken: document.getElementById('appToken'),
-    tableId: document.getElementById('tableId'),
 
     // 图表控制
     chartType: document.getElementById('chartType'),
@@ -50,14 +46,7 @@ function init() {
 
 // 加载保存的配置
 function loadSavedConfig() {
-    const savedConfig = localStorage.getItem(CONFIG.storageKeys.feishuConfig);
-    if (savedConfig) {
-        const config = JSON.parse(savedConfig);
-        elements.appId.value = config.appId || '';
-        elements.appSecret.value = config.appSecret || '';
-        elements.appToken.value = config.appToken || '';
-        elements.tableId.value = config.tableId || '';
-    }
+    // 飞书配置现在在服务器端，前端不需要保存
 
     // 检查是否有保存的数据
     const savedData = localStorage.getItem(CONFIG.storageKeys.lastData);
@@ -196,28 +185,25 @@ function handleJsonInput() {
 
 // 处理飞书数据加载
 async function handleFeishuLoad() {
-    const appId = elements.appId.value.trim();
-    const appSecret = elements.appSecret.value.trim();
-    const appToken = elements.appToken.value.trim();
-    const tableId = elements.tableId.value.trim();
-
-    if (!appId || !appSecret || !appToken || !tableId) {
-        alert('请填写完整的飞书配置信息');
-        return;
-    }
-
-    // 保存配置
-    localStorage.setItem(CONFIG.storageKeys.feishuConfig, JSON.stringify({
-        appId, appSecret, appToken, tableId
-    }));
-
     showLoading(true);
 
     try {
-        // 由于 CORS 限制，我们需要使用代理
-        // 这里使用一个简单的 CORS 代理方案
-        const data = await fetchFeishuData(appId, appSecret, appToken, tableId);
-        currentData = data;
+        // 调用后端 API（密钥保存在服务器端，安全！）
+        const apiUrl = CONFIG.apiUrl || '/api/data';
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || '请求失败');
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message || '获取数据失败');
+        }
+
+        currentData = result.data;
         saveData();
         showChartPanel();
     } catch (error) {
@@ -226,50 +212,6 @@ async function handleFeishuLoad() {
     } finally {
         showLoading(false);
     }
-}
-
-// 获取飞书数据
-async function fetchFeishuData(appId, appSecret, appToken, tableId) {
-    // 注意：由于浏览器的 CORS 限制，直接调用飞书 API 会失败
-    // 这里提供几种解决方案：
-
-    // 方案1: 使用 CORS 代理（仅供测试，生产环境请搭建自己的代理服务器）
-    const PROXY_URL = 'https://corsproxy.io/?';
-
-    // 步骤1: 获取 tenant_access_token
-    const tokenResponse = await fetch(PROXY_URL + encodeURIComponent('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal'), {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            app_id: appId,
-            app_secret: appSecret
-        })
-    });
-
-    const tokenData = await tokenResponse.json();
-    if (tokenData.code !== 0) {
-        throw new Error('获取访问令牌失败: ' + tokenData.msg);
-    }
-
-    const accessToken = tokenData.tenant_access_token;
-
-    // 步骤2: 获取表格数据
-    const recordsUrl = `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/records`;
-    const recordsResponse = await fetch(PROXY_URL + encodeURIComponent(recordsUrl), {
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        }
-    });
-
-    const recordsData = await recordsResponse.json();
-    if (recordsData.code !== 0) {
-        throw new Error('获取表格数据失败: ' + recordsData.msg);
-    }
-
-    // 转换数据格式
-    return recordsData.data.items.map(item => item.fields);
 }
 
 // 保存数据到本地存储

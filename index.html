@@ -57,26 +57,12 @@
 
         <!-- 飞书配置面板 -->
         <div id="feishuPanel" class="panel hidden">
-            <h2>飞书多维表格配置</h2>
-            <div class="form-group">
-                <label>App ID</label>
-                <input type="text" id="appId" placeholder="cli_xxxxxxxxx" />
-            </div>
-            <div class="form-group">
-                <label>App Secret</label>
-                <input type="password" id="appSecret" placeholder="xxxxxxxxxxxx" />
-            </div>
-            <div class="form-group">
-                <label>App Token (表格链接中的 bitable/{app_token})</label>
-                <input type="text" id="appToken" placeholder="app_xxxxxxxxx" />
-            </div>
-            <div class="form-group">
-                <label>Table ID</label>
-                <input type="text" id="tableId" placeholder="tbl_xxxxxxxxx" />
-            </div>
-            <p class="warning">⚠️ 注意：App Secret 敏感信息会保存在浏览器本地存储中</p>
+            <h2>飞书多维表格</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                数据将从服务器获取，密钥安全保存在后端环境变量中。
+            </p>
             <div class="button-group">
-                <button id="loadFeishuBtn" class="primary-btn">加载数据</button>
+                <button id="loadFeishuBtn" class="primary-btn">从飞书加载数据</button>
                 <button id="backFromFeishuBtn" class="secondary-btn">返回</button>
             </div>
         </div>
