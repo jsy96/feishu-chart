@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>收支明细统计</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -14,35 +13,18 @@
             <button id="refreshBtn" class="icon-btn" title="刷新数据">🔄</button>
         </header>
 
-        <!-- 数据来源选择 -->
-        <div id="dataSourcePanel" class="panel">
-            <h2>选择数据来源</h2>
-            <div class="data-source-options">
-                <button class="option-btn" data-source="csv">
-                    <span class="icon">📁</span>
-                    <span>上传 CSV 文件</span>
-                </button>
-                <button class="option-btn" data-source="feishu">
-                    <span class="icon">🚀</span>
-                    <span>飞书多维表格</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- CSV 上传面板 -->
-        <div id="csvPanel" class="panel hidden">
-            <h2>上传 CSV 文件</h2>
-            <div class="upload-area">
-                <input type="file" id="csvFileInput" accept=".csv" />
-                <p>或直接拖拽 CSV 文件到这里</p>
-            </div>
-            <button id="backBtn" class="secondary-btn">返回</button>
-        </div>
-
         <!-- 加载动画 -->
-        <div id="loadingOverlay" class="loading-overlay hidden">
+        <div id="loadingOverlay" class="loading-overlay">
             <div class="spinner"></div>
-            <p id="loadingText">加载数据中...</p>
+            <p id="loadingText">从飞书加载数据中...</p>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="errorPanel" class="panel error-panel hidden">
+            <div class="error-icon">⚠️</div>
+            <h2>数据加载失败</h2>
+            <p id="errorMessage">无法从飞书获取数据，请稍后重试</p>
+            <button id="retryBtn" class="primary-btn">重试</button>
         </div>
 
         <!-- 主界面：月份选择和统计 -->
@@ -94,8 +76,6 @@
             <div id="noDataTip" class="no-data-tip hidden">
                 <p>该月份暂无数据</p>
             </div>
-
-            <button id="changeDataBtn" class="secondary-btn full-width">更换数据源</button>
         </div>
     </div>
 

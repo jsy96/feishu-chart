@@ -12,32 +12,18 @@ let fieldNames = {
 
 // DOM 元素
 const elements = {
-    // 面板
-    dataSourcePanel: document.getElementById('dataSourcePanel'),
-    csvPanel: document.getElementById('csvPanel'),
     mainPanel: document.getElementById('mainPanel'),
+    errorPanel: document.getElementById('errorPanel'),
+    errorMessage: document.getElementById('errorMessage'),
     loadingOverlay: document.getElementById('loadingOverlay'),
     loadingText: document.getElementById('loadingText'),
-
-    // 按钮
+    retryBtn: document.getElementById('retryBtn'),
     refreshBtn: document.getElementById('refreshBtn'),
-    backBtn: document.getElementById('backBtn'),
-    changeDataBtn: document.getElementById('changeDataBtn'),
     todayBtn: document.getElementById('todayBtn'),
-
-    // 选项按钮
-    optionBtns: document.querySelectorAll('.option-btn'),
-
-    // 输入
-    csvFileInput: document.getElementById('csvFileInput'),
-
-    // 月份和统计
     monthSelect: document.getElementById('monthSelect'),
     totalIncome: document.getElementById('totalIncome'),
     totalExpense: document.getElementById('totalExpense'),
     netBalance: document.getElementById('netBalance'),
-
-    // 明细列表
     detailsSection: document.getElementById('detailsSection'),
     incomeList: document.getElementById('incomeList'),
     expenseList: document.getElementById('expenseList'),
@@ -46,92 +32,28 @@ const elements = {
 
 // 初始化
 function init() {
-    loadSavedData();
     bindEvents();
-}
-
-// 加载保存的数据
-function loadSavedData() {
-    const savedData = localStorage.getItem('feishu_chart_data');
-    if (savedData) {
-        try {
-            allData = JSON.parse(savedData);
-            if (allData.length > 0) {
-                detectFields();
-                populateMonthSelect();
-                showMainPanel();
-            }
-        } catch (e) {
-            console.error('加载保存的数据失败:', e);
-        }
-    }
+    loadFeishuData();
 }
 
 // 绑定事件
 function bindEvents() {
-    // 数据来源选择
-    elements.optionBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const source = btn.dataset.source;
-            if (source === 'csv') {
-                showPanel('csvPanel');
-            } else if (source === 'feishu') {
-                loadFeishuData();
-            }
-        });
-    });
-
-    // 返回按钮
-    elements.backBtn.addEventListener('click', () => showPanel('dataSourcePanel'));
-    elements.changeDataBtn.addEventListener('click', () => showPanel('dataSourcePanel'));
-
-    // 刷新按钮
-    elements.refreshBtn.addEventListener('click', () => {
-        if (localStorage.getItem('feishu_chart_data')) {
-            loadFeishuData();
-        }
-    });
-
-    // CSV 上传
-    elements.csvFileInput.addEventListener('change', handleCsvUpload);
-
-    // 拖拽上传
-    const uploadArea = document.querySelector('.upload-area');
-    uploadArea.addEventListener('click', () => elements.csvFileInput.click());
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('dragover');
-    });
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        const file = e.dataTransfer.files[0];
-        if (file && file.name.endsWith('.csv')) {
-            parseCsvFile(file);
-        }
-    });
-
-    // 月份选择
+    elements.retryBtn.addEventListener('click', loadFeishuData);
+    elements.refreshBtn.addEventListener('click', loadFeishuData);
     elements.monthSelect.addEventListener('change', handleMonthChange);
-
-    // 当前月按钮
     elements.todayBtn.addEventListener('click', selectCurrentMonth);
 }
 
 // 显示/隐藏面板
-function showPanel(panelId) {
-    elements.dataSourcePanel.classList.add('hidden');
-    elements.csvPanel.classList.add('hidden');
-    elements.mainPanel.classList.add('hidden');
-
-    elements[panelId].classList.remove('hidden');
+function showMainPanel() {
+    elements.mainPanel.classList.remove('hidden');
+    elements.errorPanel.classList.add('hidden');
 }
 
-function showMainPanel() {
-    showPanel('mainPanel');
+function showError(message) {
+    elements.errorMessage.textContent = message;
+    elements.errorPanel.classList.remove('hidden');
+    elements.mainPanel.classList.add('hidden');
 }
 
 // 显示/隐藏加载动画
@@ -144,35 +66,7 @@ function hideLoading() {
     elements.loadingOverlay.classList.add('hidden');
 }
 
-// 处理 CSV 上传
-function handleCsvUpload(e) {
-    const file = e.target.files[0];
-    if (file) {
-        parseCsvFile(file);
-    }
-}
-
-function parseCsvFile(file) {
-    showLoading('解析 CSV 文件...');
-
-    Papa.parse(file, {
-        header: true,
-        complete: function(results) {
-            allData = results.data.filter(row => Object.values(row).some(v => v && v.trim()));
-            saveData();
-            detectFields();
-            populateMonthSelect();
-            showMainPanel();
-            hideLoading();
-        },
-        error: function(error) {
-            alert('CSV 解析失败: ' + error.message);
-            hideLoading();
-        }
-    });
-}
-
-// 加载飞书数据
+// 从飞书加载数据
 async function loadFeishuData() {
     showLoading('从飞书加载数据...');
 
@@ -180,8 +74,8 @@ async function loadFeishuData() {
         const response = await fetch('/api/data');
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || '请求失败');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${response.status}`);
         }
 
         const result = await response.json();
@@ -190,26 +84,19 @@ async function loadFeishuData() {
             throw new Error(result.message || '获取数据失败');
         }
 
+        if (!result.data || result.data.length === 0) {
+            throw new Error('飞书表格中没有数据');
+        }
+
         allData = result.data;
-        saveData();
         detectFields();
         populateMonthSelect();
         showMainPanel();
     } catch (error) {
-        alert('加载飞书数据失败: ' + error.message);
-        console.error(error);
-        showPanel('dataSourcePanel');
+        console.error('加载飞书数据失败:', error);
+        showError('加载失败: ' + error.message);
     } finally {
         hideLoading();
-    }
-}
-
-// 保存数据到本地存储
-function saveData() {
-    try {
-        localStorage.setItem('feishu_chart_data', JSON.stringify(allData));
-    } catch (e) {
-        console.warn('数据太大，无法保存到本地存储:', e);
     }
 }
 
@@ -220,16 +107,16 @@ function detectFields() {
     const firstRow = allData[0];
     const fields = Object.keys(firstRow);
 
-    // 检测年月字段 - 查找包含 "月" 或 "month" 或格式为 "YYYY.MM" 的字段
+    // 检测年月字段 - 查找格式为 "YYYY.MM" 的字段
     fieldNames.month = fields.find(f => {
         const value = firstRow[f];
         return value && /^\d{4}\.\d{2}$/.test(String(value));
     }) || fields.find(f => /月|month/i.test(f));
 
-    // 检测收支类型字段 - 查找包含 "类型"、"type"、"收支" 等的字段
+    // 检测收支类型字段
     fieldNames.type = fields.find(f => /类型|type|收支|分类/i.test(f));
 
-    // 检测金额字段 - 查找数值类型的字段
+    // 检测金额字段
     fieldNames.amount = fields.find(f => {
         const value = parseFloat(firstRow[f]);
         return !isNaN(value) && /金额|amount|价格|price|元/i.test(f);
@@ -277,7 +164,6 @@ function selectCurrentMonth() {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const currentMonth = `${year}.${month}`;
 
-    // 查找是否有当前月的数据
     const hasCurrentMonth = Array.from(elements.monthSelect.options)
         .some(opt => opt.value === currentMonth);
 
@@ -316,7 +202,7 @@ function handleMonthChange() {
         const isExpense = amount > 0 && (type.includes('支出') || type === '支' || type === '-');
 
         const item = {
-            name: row[fieldNames.name] || row[fieldNames.amount] || '-',
+            name: row[fieldNames.name] || '-',
             amount: amount,
             date: fieldNames.date ? (row[fieldNames.date] || '') : ''
         };
@@ -356,7 +242,6 @@ function updateSummary(income, expense, balance) {
 
 // 更新明细列表
 function updateDetails(incomeItems, expenseItems) {
-    // 清空列表
     elements.incomeList.innerHTML = '';
     elements.expenseList.innerHTML = '';
 
